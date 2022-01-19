@@ -16,5 +16,4 @@ karatsuba x y | ((length  (show x)) < 10) || ((length (show y)) < 10) = x*y
               | otherwise =  let (r,s) = ((split_num x),(split_num y)) in karatsuba' (fst r) (snd r) (fst s) (snd s) (max (length r) (length s))
 
 karatsuba' :: Int -> Int -> Int -> Int -> Int -> Int
--- ok fick det här att funka, men är osäker på 10^(div n 2), där vi kör floordivision. men det verkar fungera
 karatsuba' a b c d n = let (ac,bd) = (karatsuba a c, karatsuba b d) in (10^n)*ac + ((10^(div n 2))*(karatsuba (a+b) (c+d)) - ac - bd )+ bd
