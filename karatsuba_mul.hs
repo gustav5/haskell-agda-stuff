@@ -1,4 +1,6 @@
 import Test.QuickCheck
+-----------------------------------------
+------------------- Karatsuba
 
 int_to_tup :: Integer -> (String,String)
 int_to_tup x = let y = show x in (take (div (length y) 2) y, drop (div (length y) 2) y)
@@ -16,6 +18,9 @@ karatsuba x y | x < 10 || y < 10 = x*y
 karatsuba' :: Integer -> Integer -> Integer -> Integer -> Integer -> Integer
 karatsuba' a b c d half = let (ac,bd) = (karatsuba a c, karatsuba b d) in (10^(2*half))*ac + (10^half)*((karatsuba (a+b) (c+d)) - ac - bd ) + bd
 
+-----------------------------------------
+------------------- Polynomials
+
 addPoly :: [Integer] -> [Integer]-> [Integer]
 addPoly xs ys = if length xs < length ys
   then zipWith (karatsuba) xs ys ++ drop (length xs) ys
@@ -28,5 +33,8 @@ mulPolyKaratsuba (x:xs) ys = addPoly (map (karatsuba x) ys) (0:mulPolyKaratsuba 
 
 dropZeroes :: [Integer] -> [Integer]
 dropZeroes xs = reverse $ dropWhile (==0) $ reverse xs
+
+-----------------------------------------
+------------------- Test
 
 prop a b = (karatsuba a b) == a*b 
