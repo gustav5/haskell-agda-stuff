@@ -1,12 +1,12 @@
 import Test.QuickCheck
 
-int_to_tup :: Int -> (String,String)
+int_to_tup :: Integer -> (String,String)
 int_to_tup x = let y = show x in (take (div (length y) 2) y, drop (div (length y) 2) y)
 
-str_tup_to_int :: (String,String) -> (Int,Int)
-str_tup_to_int (x,y) = (read x :: Int, read y :: Int)
+str_tup_to_int :: (String,String) -> (Integer,Integer)
+str_tup_to_int (x,y) = (read x :: Integer, read y :: Integer)
 
-split_num :: Int -> (Int,Int)
+split_num :: Integer -> (Integer,Integer)
 split_num x = str_tup_to_int (int_to_tup x) 
 
 karatsuba :: Integer -> Integer -> Integer
