@@ -2,8 +2,8 @@
 import Test.QuickCheck
 import Data.Char (digitToInt)
 
-
-
+-----------------------------------------
+------------------- Karatsuba
 
 karatsuba :: [Int] -> [Int] -> [Int]
 karatsuba xs ys | xs == [] = []
@@ -21,8 +21,6 @@ karatsuba2 xs ys    | length xs < 2 || length ys < 2 = mulPoly xs ys
                         let ad_plus_bc = subPoly (subPoly (karatsuba2 (addPoly a b) (addPoly c d)) ac) bd in
                         addPoly (addPoly (shift_right (2*m) ac) (shift_right m ad_plus_bc)) bd
 
-
-
 addPoly :: [Int] -> [Int] -> [Int]
 addPoly xs ys = if length xs < length ys
   then zipWith (+) xs ys ++ drop (length xs) ys
@@ -34,7 +32,6 @@ subPoly xs ys = if length xs < length ys
   then zipWith (-) xs ys ++ drop (length xs) ys
   else zipWith (-) xs ys ++ drop (length ys) xs
 
-
 -- shift_right 2 [1,2] will produce [0,0,1,2]
 shift_right :: Int -> [Int] -> [Int]
 shift_right n xs = (replicate n 0) ++ xs
@@ -45,6 +42,9 @@ mulPoly xs [] = []
 mulPoly (x:xs) ys = addPoly (map (x*) ys) (0:mulPoly xs ys)
 -- map :: (a -> b) -> [a] -> [b]
 -- foldr :: (a -> b -> b) -> b -> [a] -> b
+
+-----------------------------------------
+------------------- Test
 
 dropZeroes :: [Int] -> [Int]
 dropZeroes xs = reverse $ dropWhile (==0) $ reverse xs
