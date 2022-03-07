@@ -1,36 +1,40 @@
 
 import Test.QuickCheck
-import Data.Char (digitToInt)
+
 
 -----------------------------------------
 ------------------- Karatsuba
 
 karatsuba :: [Int] -> [Int] -> [Int]
-karatsuba xs ys | xs == [] = []
-                | ys == [] = []
-                | otherwise = karatsuba2 xs ys
-
-karatsuba2 :: [Int] -> [Int] -> [Int]
-karatsuba2 xs ys    | length xs < 2 || length ys < 2 = mulPoly xs ys
-                    | otherwise =
-                        let m = min (div (length xs) 2) (div (length ys) 2) in
-                        let (b,a) = splitAt m xs in
-                        let (d,c) = splitAt m ys in 
-                        let ac = karatsuba2 a c in 
-                        let bd = karatsuba2 b d in
-                        let ad_plus_bc = subPoly (subPoly (karatsuba2 (addPoly a b) (addPoly c d)) ac) bd in
-                        addPoly (addPoly (shift_right (2*m) ac) (shift_right m ad_plus_bc)) bd
+karatsuba [] xs = []
+karatsuba ys [] = []
+karatsuba [x] ys = map (x*) ys 
+karatsuba xs [y] = map (y*) xs 
+karatsuba [x1,x2] ys = mulPoly [x1,x2] ys
+karatsuba xs [y1,y2] = mulPoly xs [y1,y2]
+karatsuba xs ys  =   let m = min (div (length xs) 2) (div (length ys) 2) in
+                      let (b,a) = splitAt m xs in
+                      let (d,c) = splitAt m ys in 
+                      let ac = karatsuba a c in 
+                      let bd = karatsuba b d in
+                      let a_plus_b = addPoly a b in 
+                      let c_plus_d = addPoly c d in
+                      let ad_plus_bc = ((karatsuba a_plus_b c_plus_d) `subPoly` ac) `subPoly` bd   in
+                      ((shift_right (2*m) ac) `addPoly` (shift_right m ad_plus_bc)) `addPoly`  bd
 
 addPoly :: [Int] -> [Int] -> [Int]
-addPoly xs ys = if length xs < length ys
-  then zipWith (+) xs ys ++ drop (length xs) ys
-  else zipWith (+) xs ys ++ drop (length ys) xs
--- zipWith :: (a -> b -> c) -> [a] -> [b] -> [c]
+addPoly [] ys = ys
+addPoly xs [] = xs
+addPoly (x:xs) (y:ys) = x + y : addPoly xs ys 
+
+
 
 subPoly :: [Int] -> [Int] -> [Int]
-subPoly xs ys = if length xs < length ys
-  then zipWith (-) xs ys ++ drop (length xs) ys
-  else zipWith (-) xs ys ++ drop (length ys) xs
+subPoly xs ys = addPoly xs (negPoly ys)
+
+negPoly :: [Int] -> [Int]
+negPoly [] = []
+negPoly (x:xs) = (-x) : negPoly xs  
 
 -- shift_right 2 [1,2] will produce [0,0,1,2]
 shift_right :: Int -> [Int] -> [Int]
@@ -40,8 +44,6 @@ mulPoly :: [Int] -> [Int] -> [Int]
 mulPoly [] ys = []
 mulPoly xs [] = []
 mulPoly (x:xs) ys = addPoly (map (x*) ys) (0:mulPoly xs ys)
--- map :: (a -> b) -> [a] -> [b]
--- foldr :: (a -> b -> b) -> b -> [a] -> b
 
 -----------------------------------------
 ------------------- Test
@@ -49,8 +51,5 @@ mulPoly (x:xs) ys = addPoly (map (x*) ys) (0:mulPoly xs ys)
 dropZeroes :: [Int] -> [Int]
 dropZeroes xs = reverse $ dropWhile (==0) $ reverse xs
 
-int_to_li :: Int -> [Int]
-int_to_li xs = map digitToInt (show xs)
-
 prop :: [Int] -> [Int] -> Bool
-prop a b =  (dropZeroes (karatsuba a b)) == (dropZeroes (mulPoly a b))
+prop a b =   (karatsuba a b) == (mulPoly a b)
