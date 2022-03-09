@@ -1,7 +1,7 @@
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; refl; sym; trans; cong; cong-app)
 open Eq.≡-Reasoning
-open import Data.Nat using (ℕ; zero; suc; _⊓_ )
+open import Data.Nat using (ℕ; zero; suc; _<?_; _⊓_)
 open import Data.Nat.DivMod
 open import Data.Bool using (Bool; true; false; T; _∧_; _∨_; not)
 open import Data.Integer.Base 
@@ -10,6 +10,8 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Data.Product using (_×_; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Function using (_∘_)
 open import Level using (Level)
+ 
+
 
 
 
@@ -164,6 +166,11 @@ map : ∀ {A B : Set} → (A → B) → List A → List B
 map f []        =  []
 map f (x ∷ xs)  =  f x ∷ map f xs
 
+zipWith : ∀ {A B C : Set} → (A → B → C) → List A → List B → List C
+zipWith f [] _ = []
+zipWith f _ [] = []
+zipWith f (x ∷ xs) (y ∷ ys) = f x y ∷ zipWith f xs ys
+
 reverse′ : ∀ {A : Set} → List A → List A
 reverse′ xs = shunt xs []
 
@@ -175,7 +182,7 @@ take (suc n) (x ∷ xs) = x ∷ take n xs
 drop : ∀ {A : Set} → ℕ → List A → List A
 drop (suc n) (x ∷ xs) = drop n xs
 drop zero xs = xs
-drop n [] = []
+drop _ [] = []
   
 replicate : ∀ {A : Set} → ℕ → A → List A
 replicate zero _ = []
@@ -186,9 +193,10 @@ shift_right : ℕ → List ℤ → List ℤ
 shift_right n xs = (replicate n +0) ++ xs
 
 addPoly : List ℤ → List ℤ → List ℤ
-addPoly xs [] = []
-addPoly [] ys = []
-addPoly (x ∷ xs) (y ∷ ys) = x + y ∷ addPoly xs ys
+addPoly xs [] = xs
+addPoly [] ys = ys
+addPoly (x ∷ xs) (y ∷ ys) = x + y ∷ addPoly xs ys 
+
 
 record Pair (A B : Set) : Set where
   constructor _,_
@@ -205,7 +213,11 @@ splitAt n xs = ( take n xs , drop n xs )
 mulPoly : List ℤ → List ℤ → List ℤ
 mulPoly [] ys = []
 mulPoly xs [] = []
-mulPoly (x ∷ xs) ys = addPoly (map (x *_) ys) (+0 ∷ mulPoly xs ys)
+mulPoly (x ∷ xs) ys = addPoly (map (x *_) ys) ( +0 ∷  mulPoly xs ys)
+
+mulP-assoc : ∀ {A : Set} (xs ys : List ℤ)
+  → mulPoly (x :: xs) ys ≡ mulpoly mulPoly xs ys
+
 
 negPoly : List ℤ → List ℤ
 negPoly [] = []
@@ -217,34 +229,36 @@ subPoly xs ys = addPoly xs (negPoly ys)
 
 
 a : List ℤ
-a = [ + 2 , + 1 ]
+a = [ + 1 , + 2 ]
 
 b : List ℤ
-b = [ + 1 , + 2 ]
+b = [ + 3 , + 4 , + 5  ]
 
 --------------------------
 --------------------------
 -- Karatsuba
 
 
-
-karatsuba : ℕ → List ℤ → List ℤ → List ℤ
-karatsuba n [] xs = []
-karatsuba n ys [] = []
-karatsuba n [ x ] ys = map (x *_) ys
-karatsuba n xs [ y ] = map (y *_) xs
-karatsuba n (x1 ∷ x2 ∷ []) ys = mulPoly (x1 ∷ x2 ∷ []) ys
-karatsuba n xs (y1 ∷ y2 ∷ []) = mulPoly xs (y1 ∷ y2 ∷ [])
-karatsuba n xs ys = let m = ((length xs / 2) Data.Nat.⊓ (length ys / 2)) in
+karatsuba' : ℕ → List ℤ → List ℤ → List ℤ
+karatsuba' zero xs ys = mulPoly xs ys
+karatsuba' _ [] xs = []
+karatsuba' _ ys [] = []
+karatsuba' _ [ x ] ys = map (x *_) ys
+karatsuba' _ xs [ y ] = map (y *_) xs
+karatsuba' _ (x1 ∷ x2 ∷ []) ys = mulPoly (x1 ∷ x2 ∷ []) ys
+karatsuba' _ xs (y1 ∷ y2 ∷ []) = mulPoly xs (y1 ∷ y2 ∷ [])
+karatsuba' (suc n) xs ys = let m = ((length xs / 2) Data.Nat.⊓ (length ys / 2)) in
                   let ba = splitAt m xs in
                   let dc = splitAt m ys in
-                  let ac = karatsuba n (Pair.snd ba) (Pair.snd dc) in 
-                  let bd = karatsuba n (Pair.fst ba) (Pair.fst dc) in
+                  let ac = karatsuba' n (Pair.snd ba) (Pair.snd dc) in 
+                  let bd = karatsuba' n (Pair.fst ba) (Pair.fst dc) in
                   let a_plus_b = addPoly (Pair.snd ba) (Pair.fst ba) in
                   let c_plus_d = addPoly (Pair.snd dc) (Pair.fst dc) in
-                  let ad_plus_bc = (subPoly (subPoly (karatsuba n a_plus_b c_plus_d) ac) bd) in
+                  let ad_plus_bc = (subPoly (subPoly (karatsuba' n a_plus_b c_plus_d) ac) bd) in
                   addPoly (addPoly (shift_right (2 Data.Nat.* m) ac) (shift_right m ad_plus_bc)) bd
 
 
-karatsuba' : List ℤ → List ℤ → List ℤ
-karatsuba' xs ys = karatsuba ((length xs) Data.Nat.⊓ (length ys)) xs ys
+karatsuba : List ℤ → List ℤ → List ℤ
+karatsuba [] ys = []
+karatsuba xs [] = []
+karatsuba xs ys = karatsuba' ((length xs) Data.Nat.⊔ (length ys)) xs ys
