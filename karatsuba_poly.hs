@@ -21,7 +21,7 @@ shift_right n xs = (replicate n 0) ++ xs
 
 shiftRight' :: Int -> [Int] -> [Int]
 shiftRight' 0 xs = xs
-shiftRight' n xs = 0 :: shiftRight (n-1) xs
+shiftRight' n xs = 0 :: shiftRight' (n-1) xs
 
 mulPoly :: [Int] -> [Int] -> [Int]
 mulPoly [] ys = []
